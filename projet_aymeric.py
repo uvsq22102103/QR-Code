@@ -1,15 +1,14 @@
 import PIL as pil
-from PIL import Image
-from PIL import ImageTk
+from PIL import Image  # Pas encore de sauvegarde implémentée
+from PIL import ImageTk  # Idem
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
 import os
 
 C_H, C_W = 250, 250
 C_RAY = C_H/25
-reading = False
-check = False
-dir_frame = ''
+check = False  # Variable qui vérifie si un QR est bien chargé
+dir_frame = ''  # Variable str qui renseigne le chemin d'accès au frame.png (si vide alors askopenfile request)
 
 
 def nbrCol(matrice):
@@ -19,19 +18,24 @@ def nbrCol(matrice):
 def nbrLig(matrice):
     return len(matrice)
 
+###################################INUTILE#####################################
+
 
 def saving(matPix, filename):
     # sauvegarde l'image contenue dans matpix dans le fichier filename
 	# utiliser une extension png pour que la fonction fonctionne sans perte d'information
-    toSave = pil.Image.new(mode= "1",size= (nbrCol(matPix),nbrLig(matPix)))
+    toSave = pil.Image.new(mode="1", size=(nbrCol(matPix), nbrLig(matPix)))
     for i in range(nbrLig(matPix)):
         for j in range(nbrCol(matPix)):
-            toSave.putpixel((j,i),matPix[i][j])
+            toSave.putpixel((j, i), matPix[i][j])
     toSave.save(filename)
 
 
+###############################################################################
+
+
 def loading(filename):
-    # charge le fichier image filename et renvoie une matrice de 0 et de 1 qui représente 
+    # charge le fichier image filename et renvoie une matrice de 0 et de 1 qui représente
     # l'image en noir et blanc
     global dimension_qr
     toLoad = pil.Image.open(filename)
@@ -44,6 +48,8 @@ def loading(filename):
 
 
 def affiche_mat(matrice):
+    """Permet d'afficher la matrice en argument dans le terminal en deux 
+    dimensions"""
     label = str()
     for i in matrice:
         if len(label) != 0:
@@ -75,11 +81,11 @@ def qr_coin():
 
 
 def mat_rotate(matrice, rotation):
-    '''Fonction qui prend en entrée une matrice puis la rotation désirée
-    et qui retourne la matrice retournée.'''
+    '''Fonction qui prend en entrée une matrice, la rotation désirée
+    et qui rend la matrice retournée.'''
     if rotation == 90:
         for i in range(3):
-            matrice = list(reversed(list(zip(*matrice))))
+            matrice = list(reversed(list(zip(*matrice))))  # inspiration lib py
     elif rotation == 180:
         for i in range(2):
             matrice = list(reversed(list(zip(*matrice))))
@@ -94,18 +100,21 @@ def dir_image():
 
 
 def load_canvas():
+    """Cette fonction affiche la matrice présente dans le programme
+    sous le nom de 'mat' dans un canevas (gadget mais panache)"""
     canvas.delete("all")
-    cpt = [0, 0]
     for line in range(len(mat)):
         for i in range(len(mat[line])):
             if mat[line][i] == 1:
-                canvas.create_rectangle(C_RAY*i,C_RAY*line,C_RAY*i+C_RAY,C_RAY*line+C_RAY,fill="white")
+                canvas.create_rectangle(C_RAY*i, C_RAY*line, C_RAY*i+C_RAY,
+                                        C_RAY*line+C_RAY, fill="white")
     canvas.update()
     print("qr code affiché")
-        
 
 
 def load_image():
+    """Charge une image de QR Code, vérifie ses dimensions car 25x25 oblige
+    dans le cadre de ce projet."""
     global mat, check
     mat = loading(dir_image())
     print(affiche_mat(mat))
@@ -115,6 +124,8 @@ def load_image():
 
 
 def check_corner():
+    """Vérifie si 'mat' est orientée dans le sens de lecture que
+    veut la convention et le corrige sinon."""
     global check, mat
     if check:
         coin_ref = qr_coin()
@@ -158,7 +169,9 @@ def check_corner():
 
 
 def check_line():
-    global mat, check, reading
+    """Fonction qui vérifie que les lignes qui joignent chaques coins
+    sont présentes, sinon erreur"""
+    global mat, check
     if check:
         erreur = False
         if dir_frame == '':
@@ -168,18 +181,18 @@ def check_line():
             qr_frame = loading(dir_frame)
         print('QR Frame chargé')
         for i in range(6, 18):
-            if mat[6][i] != qr_frame[6][i]:
-                erreur = True
-            if mat[i][6] != qr_frame[i][6]:
+            if mat[6][i] != qr_frame[6][i] or mat[i][6] != qr_frame[i][6]:
                 erreur = True
         if erreur:
             print('Les lignes de coins du QR Code ne sont pas identifiées')
-            reading = True
         else:
             print('Les lignes de coins du QR Code sont identifiées')
 
 
 def parité(bits: list, indices: list):
+    """Fonction de calcul de parité basique qui prend en argument une
+    quelconque liste composée en integer puis une autre liste qui correspond
+    aux indices de comparaison."""
     out = 0
     for bit in indices:
         out += bits[bit]
@@ -187,6 +200,7 @@ def parité(bits: list, indices: list):
 
 
 def switch_bin(binary: int):
+    """return le bit opposé de celui en entrée"""
     if binary == 0:
         binary = 1
     else:
@@ -242,6 +256,9 @@ def sorting_qr():
 
 
 def blocs_to_hamming(blocs):
+    """Prend chaque bloc à part puis le décompose en deux sous blocs
+    qui sont passés en Hamming, on obtient donc 8 bits de données sous forme
+    de liste"""
     output = []
     for bloc in blocs:
         output.append(hamming(bloc[:7]) + hamming(bloc[7:]))
@@ -254,9 +271,9 @@ def bits_to_ascii(binary: list):
     value = str()
     for i in binary:
         value += str(i)
-    print(repr(value))
+    print(value)
     value = chr(int(value, 2))
-    print(repr(value))
+    print(value)
     return value
 
 
@@ -281,6 +298,9 @@ def check_filter():
 
 
 def check_qr():
+    """Fonction maîtresse liée au check & process, c'est elle
+    qui exécute la majorité des fonctions du programme,
+    d'où l'appellation de son bouton"""
     if check:
         check_corner()
         check_line()
@@ -312,8 +332,9 @@ root.geometry('420x490')
 # Ajout de fonctionnalités
 
 button_charger = tk.Button(root, text='Charger', command=load_image, bg='gray')
-button_check_qr = tk.Button(root, text='Check & Process', command=check_qr, bg='gray')
-canvas = tk.Canvas(root, width=C_W,height=C_H,bg="black")
+button_check_qr = tk.Button(root, text='Check & Process', command=check_qr,
+                            bg='gray')
+canvas = tk.Canvas(root, width=C_W, height=C_H, bg="black")
 
 button_charger.pack(side=tk.BOTTOM, ipadx=150, ipady=6)
 button_check_qr.pack(side=tk.BOTTOM, ipadx=70)
