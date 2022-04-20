@@ -89,7 +89,7 @@ def mat_rotate(matrice, rotation):
 
 
 def dir_image():
-    file_dir = askopenfilename(initialdir=os.path.realpath(__file__)[0:-9])
+    file_dir = askopenfilename(initialdir=os.path.realpath(os.getcwd()))
     return file_dir
 
 
@@ -294,7 +294,6 @@ def check_qr():
         if mat[24][8] == 1:  # ASCII
             output = str()
             for bloc in blocs:
-                bloc.reverse()
                 output += bits_to_ascii(bloc)
             print('Contenu du QR Code : ', output)
         else:
