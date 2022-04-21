@@ -8,8 +8,7 @@ import os
 C_H, C_W = 250, 250
 C_RAY = C_H/25
 check = False  # Variable qui vérifie si un QR est bien chargé
-dir_frame = ''  # Variable str qui renseigne le chemin d'accès au frame.png (si vide alors askopenfile request)
-
+dir_frame = os.path.realpath(os.getcwd()+"\DM IN202\\Exemples\\frame.png")  # Si vide : askopenfile request
 
 def nbrCol(matrice):
     return(len(matrice[0]))
@@ -95,7 +94,7 @@ def mat_rotate(matrice, rotation):
 
 
 def dir_image():
-    file_dir = askopenfilename(initialdir=os.path.realpath(os.getcwd()))
+    file_dir = askopenfilename(initialdir=os.path.realpath(os.getcwd())+"\DM IN202\\Exemples")
     return file_dir
 
 
