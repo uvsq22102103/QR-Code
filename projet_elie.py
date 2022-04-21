@@ -1,13 +1,17 @@
 # noir = 0
 # blanc  = 1
-from json import decoder
-from tracemalloc import stop
+
+##########################
+# importation des librairies
+
 import PIL as pil
 from PIL import Image
-from PIL import ImageTk 
 import tkinter as tk
 import tkinter.filedialog as tkf
 
+
+##########################
+# definitions des fonctions
 
 def nbrCol(matrice):
     return(len(matrice[0]))
@@ -17,8 +21,8 @@ def nbrLig(matrice):
     return len(matrice)
 
 
-def saving(matPix, filename):#sauvegarde l'image contenue dans matpix dans le fichier filename
-							 #utiliser une extension png pour que la fonction fonctionne sans perte d'information
+def saving(matPix, filename): #sauvegarde l'image contenue dans matpix dans le fichier filename
+							  #utiliser une extension png pour que la fonction fonctionne sans perte d'information
     toSave=pil.Image.new(mode = "1", size = (nbrCol(matPix),nbrLig(matPix)))
     for i in range(nbrLig(matPix)):
         for j in range(nbrCol(matPix)):
@@ -37,12 +41,13 @@ def loading(filename):#charge le fichier image filename et renvoie une matrice d
 
 
 def squellette():
-    matrice =loading("coin.png")
+    """renvoie une matrice correspondante au coin du qr code"""
+    matrice =loading("DM IN202/Exemples/coin.png")
     return matrice
 
 
 def check_coin(matrice):
-    matrice = loading(matrice)
+    """controle si le qr code est dans la bonne position si il ne l'ai pas le retourne de 90°"""
     test = squellette()
     chek = 0
 
@@ -51,29 +56,30 @@ def check_coin(matrice):
             chek  = True
             pass
         else: 
-            print("ce n'est pa un bon carré" )
+            print("le qr code est mal positioné" )
             matrice = rotate(matrice)
     if chek == True :        
-        print("les qr code est dans la bonne position")
+        print("le qr code est dans la bonne position")
+        return matrice
 
 
 def check_alternance(matrice):
+    """controle l'alternance, pixel noir et pixel blanc qui rejoignent les symboles des coins de l’image"""
     alternance = [1,0,1,0,1,0,1,0,1,0,1]
-    matrice = loading(matrice)
     verif = True
     for i in range (11):
         if matrice[6][7+i] == alternance[i] and matrice[7+i][6] == alternance[i]  :
             verif = True
-            print("ca marche")
         else : 
             print("nope")
             matrice = rotate(matrice)
-
- 
-        
+    if verif == True:
+        print("l'alternance est juste")
+    return matrice
 
 
 def rotate(matrice):
+    """retourne l'image de 90° vers la droite"""
     mat=[]
     for i in range(nbrCol(matrice)):
         ligne = []
@@ -85,8 +91,9 @@ def rotate(matrice):
     return matrice
 
 
-def verification(l):
-    p1,p2,p3,d1,d2,d3,d4 = l
+def hamming(l):
+    """verifie si les donnée ou les bits de parités ne contiennent pas d'erreur """
+    d1,d2,d3,d4,p1,p2,p3 = l
     c = [True,True,True]
     correction = ""
     if p1 != ((d1 + d2 + d4) % 2):
@@ -122,78 +129,52 @@ def verification(l):
                 correction = "p3"
     else: 
         correction = "aucune correction"
-    l = p1,p2,p3,d1,d2,d3,d4
+    l = d1,d2,d3,d4,p1,p2,p3
     d = d1,d2,d3,d4
 
     return(l)
-# a = decode([0, 1, 1, 0, 1, 1, 0])
-# print(a)
 
 
 def read_bolc(m):
-    a  = []
-    # for i in range (nbrCol(m)):
-    b = []
+    """ lit le QR code par bloc de 14 bits"""
+    all_blocks  = []
+
     sens = True
     for i in range (1,nbrCol(m)+1,2):
         if sens == True  and i < len(m)-7 :
             case = 0
             for j in range (2):
-                b = []
-                while len(b) < 14 :
+                block = []
+                while len(block) < 14 :
                     case += 1
-                    b.append(m[-i][-case])
-                    b.append(m[-i-1][-case])
-                a.append(b)
+                    block.append(m[-i][-case])
+                    block.append(m[-i-1][-case])
+                all_blocks.append(block)
         elif sens == False and i <= len(m)-7:
             case = 15
             for j in range (2):
-                b = []
-                while len(b) < 14 :
+                block = []
+                while len(block) < 14 :
                     case -= 1
-                    b.append(m[-i][-case])
-                    b.append(m[-i-1][-case])
-                a.append(b)
+                    block.append(m[-i][-case])
+                    block.append(m[-i-1][-case])
+                all_blocks.append(block)
         sens = not sens
-    return a
+    return all_blocks
 
 
-# def decoupage(m):
-#     a =[]
-#     for i in m:
-#         if i.count(1) != len(i):
-#             a.append(i[-1:-8:-1])
-#             a.append(i[-8::-1])
-        
-#     return a
-
-
-
-
-# def decodage(m) :
-#     message = ""
-#     for i in range (0,len(m)-1,2):
-#         code_bi = ""
-#         for j in range (3,7):
-#             code_bi += str(m[i][j])
-#         for j in range (3,7):
-#             code_bi += str(m[i+1][j])
-#         code_num = int(code_bi,2)
-#         print(code_bi)
-#         print(code_num)
-#         message += chr(code_num)
-#     # print(message)
-#     return message
-
-
-def decoupage(m):
-    a =[]
-    for i in m:
+def decoupage(bloc):
+    """ decoupe le bloc de 14 en deux bloc de 7 bits"""
+    partie=[]
+    for i in bloc:
         if i.count(1) != len(i):
-            a.append(i[:7])
-            a.append(i[7:])
-    return a
-def decodage(m) :
+            partie.append(i[:7])
+            partie.append(i[7:])
+    return partie
+
+
+def trad_ascii(m) :
+    """ renvoie la lettre corespondant au  8 bits de donnés """
     message = ""
     for i in range (0,len(m)-1,2):
         code_bi = ""
@@ -202,78 +183,70 @@ def decodage(m) :
         for j in range (4):
             code_bi += str(m[i+1][j])
         code_num = int(code_bi,2)
-        print(code_bi)
-        print(code_num)
+        
         message += chr(code_num)
-    # print(message)
     return message
 
 
-def decodage_hex(m) :
+def trad_hex(m) :
+    """ renvoie l'hexadecimal correspondant au 4 bits de donnée"""
     message = ""
-    for i in range (0,len(m)-1,2):
+    for i in range (0,len(m)):
         multiplicateur = 8
         code_hexa = ""
-        code_bi_1 = 0
-        code_bi_2 = 0
-        for j in range (3,7):
-            code_bi_1 += (m[i][j])*multiplicateur
+        code_bi = 0
+        for j in range (4):
+            code_bi += (m[i][j])*multiplicateur
             multiplicateur //= 2
-        multiplicateur = 8
-        for j in range (3,7):
-            code_bi_2 += (m[i+1][j])*multiplicateur
-            multiplicateur //= 2
-        print(code_bi_1,code_bi_2)
-        code_hexa = hex(code_bi_1)[2:].zfill(0) + hex(code_bi_2) [2:].zfill(0) 
-        code_hexa = int(code_hexa,16)
-        message += chr(code_hexa)
+        code_hexa = hex(code_bi)[2:].zfill(0)
+        message += (code_hexa)
 
     return message
         
 
 def importation():
+    """ importe le fichier selectionner par l'utilisateur"""
     global fichiers
     fichiers = tkf.askopenfilename(initialdir="/Users/elie/Desktop/QR-Code/DM IN202/Exemples")
+    print("le fichier est bien importé")
     
 
-def  essai():
-    
-    m = loading(fichiers)
+def  decodage():
+    "permet de decoder un QR code"
 
-    b = read_bolc(m)
+    # qr = la matrice du qr code
+    # bloc = le bloc de 14 bits decoupé
+    # donne = les 7 bits de donné et  de parités
+    # resultat =  le message contenu par le qr code
+    text.delete(0,tk.END)
+    qr = loading(fichiers)
+    qr = check_coin(qr)
+    qr = check_alternance(qr) 
+    bloc = read_bolc(qr)
+    donne = decoupage(bloc)
+    for i in range (len(donne)):
+        donne[i] = hamming(donne[i])
+    if qr[24][8] == 1:
+        resultat = trad_ascii(donne)
+    else:
+        resultat = trad_hex(donne)
+    print("le decodage est terminé")
+    text.insert(0,resultat)
 
-    c =decoupage(b)
-    print(c)
-    # for i in range (len(c)):
-    #     c[i] = verification(c[i])
-    # print(verification(c[1]))
-    
-    d = decodage(c)
-    # print('hello' ,d)
-    print(d)
-    text.insert(0,d)
 
+##########################
+# fenetre graphique
 
 fichiers = ""
-
-
 
 racine = tk.Tk()
 racine.title( "QR-CODE")
 importer = tk.Button(racine,text="importer le ficher", command= importation)
 importer.grid(column= 0, row= 1)
-deco = tk.Button(racine,text="decoder le ficher", command= essai)
+deco = tk.Button(racine,text="decoder le ficher", command= decodage)
 deco.grid(column= 0 , row= 2)
 text = tk.Entry(racine)
 text.grid(column = 0, row= 0)
-
-
-
-
-
-
-
-
 
 racine.mainloop()
 
