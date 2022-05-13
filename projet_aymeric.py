@@ -264,16 +264,26 @@ def blocs_to_hamming(blocs):
     return output
 
 
-def bits_to_ascii(binary: list):
+def bits_to_ascii(bits: list):
     '''Prend du binaire en argument (list) et retourne
     le character ASCII associé'''
     value = str()
-    for i in binary:
+    for i in bits:
         value += str(i)
     print(value)
     value = chr(int(value, 2))
     print(value)
     return value
+
+
+def bits_to_hex(bits: list):
+    """Prend une liste binaire en argument pour 
+    retourner l'hexadécimal associé"""
+    value = str()
+    for i in bits:
+        value += str(i)
+    print(value)
+    return hex(int(value, 2))[2:]
 
 
 def check_filter():
@@ -287,13 +297,49 @@ def check_filter():
     \nSi "11" des lignes verticales alternées noires et blanches, 
     la plus à gauche étant noire.'''
     global mat
-    filtre = str(mat[23][8]) + str(mat[22][8])
+    filtre = str(mat[22][8]) + str(mat[23][8])
+    xor_bool = False
     if filtre == '01':
-        pass
+        print("Filtre : Damier")
+        for i in range(len(mat)):
+            for j in range(len(mat[i])):
+                if xor_bool:
+                    if mat[i][j] == 0:
+                        mat[i][j] = 1
+                    else:
+                        mat[i][j] = 0
+                    xor_bool = False
+                else:
+                    xor_bool = True
+        blocs = sorting_qr()
     elif filtre == '10':
-        pass
+        print("Filtre : Lignes horizontales")
+        for i in range(len(mat)):
+            if xor_bool:
+                for j in range(len(mat[i])):
+                    if mat[i][j] == 0:
+                        mat[i][j] = 1
+                    else:
+                        mat[i][j] = 0
+            else:
+                xor_bool = True
+        blocs = sorting_qr()
     elif filtre == '11':
-        pass
+        print("Filtre : Lignes Verticales")
+        mat = mat_rotate(mat, 90)
+        for i in range(len(mat)):
+            if xor_bool:
+                for j in range(len(mat[i])):
+                    if mat[i][j] == 0:
+                        mat[i][j] = 1
+                    else:
+                        mat[i][j] = 0
+            else:
+                xor_bool = True
+        mat = mat_rotate(mat, -90)
+    else:
+        print("Pas de Filtre")
+    return blocs
 
 
 def check_qr():
@@ -303,12 +349,7 @@ def check_qr():
     if check:
         check_corner()
         check_line()
-        check_filter()
-        blocs = sorting_qr()
-        print('\nExtraction des blocs binaires du QR Code :\n')
-        for i in blocs:
-            print(i)
-        print("\nFin de l'extraction\n")
+        blocs = check_filter()
         blocs = blocs_to_hamming(blocs)
         if mat[24][8] == 1:  # ASCII
             output = str()
@@ -316,8 +357,10 @@ def check_qr():
                 output += bits_to_ascii(bloc)
             print('Contenu du QR Code : ', output)
         else:
-            # Données numériques
-            pass
+            output = str()
+            for bloc in blocs:
+                output += bits_to_hex(bloc)
+            print("Sortie Hexadécimale : ", output)
     else:
         canvas.delete("all")
 
