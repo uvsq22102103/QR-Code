@@ -337,8 +337,10 @@ def check_filter():
             else:
                 xor_bool = True
         mat = mat_rotate(mat, -90)
+        blocs = sorting_qr()
     else:
         print("Pas de Filtre")
+        blocs = sorting_qr()
     return blocs
 
 
