@@ -79,7 +79,7 @@ def check_alternance(matrice):
              == alternance[i]:
             verif = True
         else:
-            print("nope")
+            print("l'alternance n'est pas respecter")
             matrice = rotate(matrice)
     if verif:
         print("l'alternance est juste")
@@ -137,7 +137,7 @@ def hamming(liste):
                 correction = "p3"
     else:
         correction = "aucun bits"
-        print("il y a une erreur a", correction)
+    print("il y a une erreur a", correction)
     liste = d1, d2, d3, d4, p1, p2, p3
 
     return(liste)
@@ -175,10 +175,12 @@ def read_bolc(m):
 def decoupage(bloc):
     """ decoupe le bloc de 14 en deux bloc de 7 bits"""
     partie = []
+    num_bloc = 0
     for i in bloc:
         if i.count(1) != len(i):
             partie.append(i[:7])
             partie.append(i[7:])
+        num_bloc += 1
     return partie
 
 
@@ -233,6 +235,7 @@ def decodage():
     num_filtre = filtre(qr)
     bloc = read_bolc(qr)
     donne = decoupage(bloc)
+    print(donne)
     for i in range(len(donne)):
         donne[i] = hamming(donne[i])
     if qr[24][8] == 1:
@@ -250,10 +253,10 @@ def filtre(m):
     a = str(m[22][8]) + str(m[23][8])
     noir = True
     if a == "01":  # damier
-        for i in range(10, len(m)):
-            for j in range(8, len(m[i])):
+        for i in range(len(m)):
+            for j in range(len(m[i])):
                 if noir:
-                    m[i][j] = m[i][j] ^ int(a[0])
+                    pass
                 else:
                     m[i][j] = m[i][j] ^ int(a[1])
                 noir = not noir
