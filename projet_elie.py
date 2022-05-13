@@ -5,9 +5,10 @@
 # importation des librairies
 
 import PIL as pil
-from PIL import Image
+from PIL import Image  # noqa
 import tkinter as tk
 import tkinter.filedialog as tkf
+import tkinter.messagebox as tkm
 
 
 ##########################
@@ -144,6 +145,7 @@ def hamming(liste):
 
 def read_bolc(m):
     """ lit le QR code par bloc de 14 bits"""
+    global num_filtre
     all_blocks = []
 
     sens = True
@@ -204,7 +206,7 @@ def trad_hex(m):
         for j in range(4):
             code_bi += (m[i][j])*multiplicateur
             multiplicateur //= 2
-        code_hexa = hex(code_bi)[2:].zfill(0)
+        code_hexa = hex((code_bi))[2:].zfill(0)
         message += (code_hexa)
 
     return message
@@ -219,6 +221,7 @@ def importation():
 
 def decodage():
     "permet de decoder un QR code"
+    global num_filtre
     # qr = la matrice du qr code
     # bloc = le bloc de 14 bits decoupé
     # donne = les 7 bits de donné et  de parités
@@ -227,6 +230,7 @@ def decodage():
     qr = loading(fichiers)
     qr = check_coin(qr)
     qr = check_alternance(qr)
+    num_filtre = filtre(qr)
     bloc = read_bolc(qr)
     donne = decoupage(bloc)
     for i in range(len(donne)):
@@ -237,11 +241,42 @@ def decodage():
         resultat = trad_hex(donne)
     print("le decodage est terminé")
     text.insert(0, resultat)
+    tkm.showinfo("résultat", message="le message est: "+resultat)
+
+
+def filtre(m):
+    """permet de savoir quel filtre est appliqué et de changer les bit\
+         de données en fonction de celui-ci"""
+    a = str(m[22][8]) + str(m[23][8])
+    noir = True
+    if a == "01":  # damier
+        for i in range(10, len(m)):
+            for j in range(8, len(m[i])):
+                if noir:
+                    m[i][j] = m[i][j] ^ int(a[0])
+                else:
+                    m[i][j] = m[i][j] ^ int(a[1])
+                noir = not noir
+    elif a == "10":  # ligne horizontal
+        for i in range(len(m)):
+            for j in range(len(m[i])):
+                if i % 2 == 1:
+                    m[i][j] = m[i][j] ^ int(a[1])
+                elif i % 2 == 0:
+                    m[i][j] = m[i][j] ^ int(a[0])
+    elif a == "11":  # ligne verticale
+        for i in range(len(m)):
+            for j in range(len(m[i])):
+                if j % 2 == 1:
+                    m[i][j] = m[i][j] ^ int(a[0])
+                elif j % 2 == 0:
+                    m[i][j] = m[i][j] ^ int(a[1])
 
 
 ##########################
 # fenetre graphique
 
+num_filtre = ""
 fichiers = ""
 
 racine = tk.Tk()
