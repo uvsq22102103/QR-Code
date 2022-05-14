@@ -143,33 +143,33 @@ def hamming(liste):
     return(liste)
 
 
-def read_bolc(m):
-    """ lit le QR code par bloc de 14 bits"""
+def read_bolc():
     global num_filtre
-    all_blocks = []
-
-    sens = True
-    for i in range(1, nbrCol(m)+1, 2):
-        if sens and i < len(m)-7:
-            case = 0
+    liste_binaire = []
+    blocs = []
+    size = 24
+    for zigzag in range(4):
+        zigzag += 1
+        liste_binaire.append([])
+        for i in range(14):
+            x = 24-i
             for j in range(2):
-                block = []
-                while len(block) < 14:
-                    case += 1
-                    block.append(m[-i][-case])
-                    block.append(m[-i-1][-case])
-                all_blocks.append(block)
-        elif sens is False and i <= len(m)-7:
-            case = 15
+                y = size-j
+                liste_binaire[(zigzag*2)-2].append(num_filtre[y][x])
+        size -= 2
+        liste_binaire.append([])
+        for i in range(14):
+            x = 11+i
             for j in range(2):
-                block = []
-                while len(block) < 14:
-                    case -= 1
-                    block.append(m[-i][-case])
-                    block.append(m[-i-1][-case])
-                all_blocks.append(block)
-        sens = not sens
-    return all_blocks
+                y = size-j
+                liste_binaire[(zigzag*2)-1].append(num_filtre[y][x])
+        size -= 2
+    for ligne in liste_binaire:
+        if ligne[0:len(ligne)//2].count(1) != 14:
+            blocs.append(ligne[0:len(ligne)//2])
+        if ligne[len(ligne)//2:len(ligne)].count(1) != 14:
+            blocs.append(ligne[len(ligne)//2:len(ligne)])
+    return blocs
 
 
 def decoupage(bloc):
@@ -180,7 +180,8 @@ def decoupage(bloc):
         if i.count(1) != len(i):
             partie.append(i[:7])
             partie.append(i[7:])
-        num_bloc += 1
+        num_bloc += 2
+    
     return partie
 
 
@@ -233,10 +234,10 @@ def decodage():
     qr = check_coin(qr)
     qr = check_alternance(qr)
     num_filtre = filtre(qr)
-    bloc = read_bolc(qr)
+    bloc = read_bolc()
     donne = decoupage(bloc)
     print(donne)
-    for i in range(len(donne)):
+    for i in range(len(donne)-8):
         donne[i] = hamming(donne[i])
     if qr[24][8] == 1:
         resultat = trad_ascii(donne)
@@ -274,6 +275,7 @@ def filtre(m):
                     m[i][j] = m[i][j] ^ int(a[0])
                 elif j % 2 == 0:
                     m[i][j] = m[i][j] ^ int(a[1])
+    return m
 
 
 ##########################
