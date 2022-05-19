@@ -254,33 +254,6 @@ def importation():
     print("Fichier importé")
 
 
-def decodage():
-    "permet de decoder un QR code"
-    global num_filtre
-    # qr = la matrice du qr code
-    # bloc = le bloc de 14 bits decoupé
-    # donne = les 7 bits de donné et  de parités
-    # resultat =  le message contenu par le qr code
-    text.delete(0, tk.END)
-    qr = loading(fichiers)
-    qr = check_coin(qr)
-    qr = check_alternance(qr)
-    nbr_blocs = int(str(qr[13][0])+str(qr[14][0])+str(qr[15][0])+str(qr[16][0])+str(qr[17][0]), 2)
-    num_filtre = filtre(qr)
-    bloc = read_bloc()
-    donne = decoupage(bloc)
-    donne = donne[0:nbr_blocs*2]
-    for i in range(len(donne)-8):
-        donne[i] = hamming(donne[i])
-    if qr[24][8] == 1:
-        resultat = trad_ascii(donne)
-    else:
-        resultat = trad_hex(donne)
-    print("Décodage achevé")
-    text.insert(0, resultat)
-    tkm.showinfo("Résultat", message="Le QR Code contient: "+resultat)
-
-
 def filtre(m):
     """permet de savoir quel filtre est appliqué et de changer les bit\
          de données en fonction de celui-ci"""
@@ -311,6 +284,142 @@ def filtre(m):
     return m
 
 
+def chr_to_ascii_in_bin():
+    lettre = list(text.get())
+
+    for i in range(len(lettre)):
+        lettre[i] = bin(ord(lettre[i]))[2:]
+        while len(lettre[i]) < 8:
+            lettre[i] = "0"+lettre[i]
+    return(lettre)
+
+
+def decoupage_to_w(bin_entier):
+    bin_decoupe = []
+    for i in range(len(bin_entier)):
+        bin_decoupe.append(bin_entier[i][:4])
+        bin_decoupe.append(bin_entier[i][4:])
+    return bin_decoupe
+
+
+def hamming_inverse(donnee):
+    donnee = list(donnee)
+    for i in range(len(donnee)):
+        donnee[i] = int(donnee[i])
+    d1, d2, d3, d4 = donnee
+    p1 = ((d1 + d2 + d4) % 2)
+    p2 = ((d1 + d3 + d4) % 2)
+    p3 = ((d2 + d3 + d4) % 2)
+    return ([d1, d2, d3, d4, p1, p2, p3])
+
+
+def form_bloc(bloc):
+    bloc_de_14 = []
+    for i in range(0,len(bloc),2):
+        bloc_de_14.append((bloc[i]+bloc[i+1]))
+    return bloc_de_14
+
+
+def remplissage_qr(qr_code,bloc_to_qr):
+    bloc = 0
+    sens = True
+    longueurs = bin(len(bloc_to_qr))[2:]
+    print(longueurs)
+    while len(longueurs) != 5:
+        longueurs = "0" + longueurs
+    qr_code[22][8] = 0
+    qr_code[23][8] = 0
+    qr_code[13][0] = int(longueurs[0])
+    qr_code[14][0] = int(longueurs[1])
+    qr_code[15][0] = int(longueurs[2])
+    qr_code[16][0] = int(longueurs[3])
+    qr_code[17][0] = int(longueurs[4])
+    if len(bloc_to_qr) % 2 != 0:
+        bloc_to_qr.append([1,1,1,1,1,1,1,1,1,1,1,1,1,1])
+
+
+    print(bloc_to_qr)
+    for i in range(0,len(bloc_to_qr),2):
+        if sens:
+            i = 24 - i
+            chiffre = 0
+            for j in range(7):
+                j = 24-j
+                qr_code[i][j] = bloc_to_qr[bloc][chiffre]
+                chiffre += 1
+                qr_code[i-1][j] = bloc_to_qr[bloc][chiffre]
+                chiffre += 1
+            bloc += 1
+            chiffre = 0
+            for j in range(7,14):
+                j = 24-j
+                qr_code[i][j] = bloc_to_qr[bloc][chiffre]
+                chiffre += 1
+                qr_code[i-1][j] = bloc_to_qr[bloc][chiffre]
+                chiffre += 1
+            bloc += 1
+        else:
+            i = 24 - i
+            chiffre = 0
+            for j in range(7):
+                j = 11+j
+                qr_code[i][j] = bloc_to_qr[bloc][chiffre]
+                chiffre += 1
+                qr_code[i-1][j] = bloc_to_qr[bloc][chiffre]
+                chiffre += 1
+            bloc += 1
+            chiffre = 0
+            for j in range(7):
+                j = 18+j
+                qr_code[i][j] = bloc_to_qr[bloc][chiffre]
+                chiffre += 1
+                qr_code[i-1][j] = bloc_to_qr[bloc][chiffre]
+                chiffre += 1
+            bloc += 1
+        sens = not sens
+
+    for i in range(25):
+        print(qr_code[i])
+    saving(qr_code,"DM IN202/Exemples/qr_message.png")
+
+
+
+def ecriture_qr():
+    qr_e = loading("DM IN202/Exemples/frame.png")
+    text_bin = chr_to_ascii_in_bin()
+    bloc_4 = decoupage_to_w(text_bin)
+    bloc_7 = []
+    for i in range(len(bloc_4)):
+        bloc_7.append(hamming_inverse(bloc_4[i]))
+    print(bloc_7)
+    bloc_14 = form_bloc(bloc_7)
+    remplissage_qr(qr_e, bloc_14)
+    return
+
+
+def decodage():
+    "permet de decoder un QR code"
+    global num_filtre
+    text.delete(0, tk.END)
+    qr = loading(fichiers)
+    qr = check_coin(qr)
+    qr = check_alternance(qr)
+    nbr_blocs = int(str(qr[13][0])+str(qr[14][0])+str(qr[15][0])+str(qr[16][0])+str(qr[17][0]), 2)
+    num_filtre = filtre(qr)
+    bloc = read_bloc()
+    donne = decoupage(bloc)
+    donne = donne[0:nbr_blocs*2]
+    for i in range(len(donne)-8):
+        donne[i] = hamming(donne[i])
+    if qr[24][8] == 1:
+        resultat = trad_ascii(donne)
+    else:
+        resultat = trad_hex(donne)
+    print("Décodage achevé")
+    text.insert(0, resultat)
+    tkm.showinfo("Résultat", message="Le QR Code contient: "+resultat)
+
+
 ##########################
 # fenetre graphique
 
@@ -323,7 +432,9 @@ importer = tk.Button(racine, text="Import fichier", command=importation)
 importer.grid(column=0, row=1)
 deco = tk.Button(racine, text="Décodage fichier", command=decodage)
 deco.grid(column=0, row=2)
-text = tk.Entry(racine, width=100)
+sauv = tk.Button(racine, text="créer un qr", command=ecriture_qr)
+sauv.grid(column=0, row=3)
+text = tk.Entry(racine, width=50)
 text.grid(column=0, row=0)
 
 racine.mainloop()
