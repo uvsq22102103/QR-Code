@@ -47,36 +47,71 @@ def loading(filename):  # charge le fichier image filename et renvoie une\
     #  matrice de 0 et de 1 qui représente
     # l'image en noir et blanc
     toLoad = pil.Image.open(filename)
-    mat = [[0]*toLoad.size[0] for k in range(toLoad.size[1])]
+    qr = [[0]*toLoad.size[0] for k in range(toLoad.size[1])]
     for i in range(toLoad.size[1]):
         for j in range(toLoad.size[0]):
-            mat[i][j] = 0 if toLoad.getpixel((j, i)) == 0 else 1
-    return mat
+            qr[i][j] = 0 if toLoad.getpixel((j, i)) == 0 else 1
+    return qr
 
 
-def squellette():
-    """renvoie une matrice correspondante au coin du qr code"""
-    matrice = loading("DM IN202/Exemples/coin.png")
-    return matrice
+def qr_coin():
+    '''Cette fonction ne prend rien en argument et retourne un coin de QR code
+    sous forme de matrice ! '''
+    coin = []
+    for i in range(7):
+        coin.append([])
+        for j in range(7):
+            coin[i].append(0)
+    for i in range(5):
+        i += 1
+        for j in range(5):
+            j += 1
+            coin[i][j] = 1
+    for i in range(3):
+        i += 2
+        for j in range(3):
+            j += 2
+            coin[i][j] = 0
+    return coin
 
 
-def check_coin(matrice):
-    """controle si le qr code est dans la bonne position si il ne l'ai pas le
-     retourne de 90°"""
-    test = squellette()
-    chek = 0
-
-    for i in range(8):
-        if matrice[i][:8] == test[i] and matrice[-i+(-1)][:8] == test[i] and\
-             matrice[i][17:] == test[i][::-1]:
-            chek = True
-            pass
-        else:
-            print("QR Code mal positionné, rotation")
-            matrice = rotate(matrice)
-    if chek:
-        print("QR Code en bonne position")
-        return matrice
+def check_coin(qr):
+    """Vérifie si 'qr' est orientée dans le sens de lecture que
+    veut la convention et le corrige sinon."""
+    coin_ref = qr_coin()
+    coins = [[], [], [], []]
+    for i in range(7):
+        coins[0].append([])
+        coins[1].append([])
+        for j in range(7):
+            coins[0][i].append(qr[i][j])
+        for j in range(18, 25):
+            coins[1][i].append(qr[i][j])
+    for i in range(18, 25):
+        coins[2].append([])
+        coins[3].append([])
+        for j in range(7):
+            coins[2][i-18].append(qr[i][j])
+        for j in range(18, 25):
+            coins[3][i-18].append(qr[i][j])
+    if coins[0] != coin_ref:
+        print('UP Left corner should be the DOWN Right')
+        qr = rotate(qr)
+        qr = rotate(qr)
+        print('Correction...')
+    elif coins[1] != coin_ref:
+        print('UP Right corner should be the DOWN Right')
+        qr = rotate(qr)
+        print('Correction...')
+    elif coins[2] != coin_ref:
+        print('DOWN Left corner should be the DOWN Right')
+        qr = rotate(qr)
+        qr = rotate(qr)
+        qr = rotate(qr)
+        print('Correction...')
+    elif coins[3] != coin_ref:
+        print('Le QR code est bien placé')
+    return qr
 
 
 def check_alternance(matrice):
